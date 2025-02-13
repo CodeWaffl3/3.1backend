@@ -1,0 +1,28 @@
+{
+  "name": "3.1backend",
+  "version": "0.0.1",
+  "description": "Backend for PhoneBook App",
+  "homepage": "https://github.com/CodeWaffl3/3.1backend#readme",
+  "bugs": {
+    "url": "https://github.com/CodeWaffl3/3.1backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeWaffl3/3.1backend.git"
+  },
+  "license": "MIT",
+  "author": "Gabriel Andres Cardenas Tapia",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node --watch index.js",
+    "start": "node index.js",
+    "build:ui": "rm -rf dist && cd ../../part2/2.6phonebook && npm run build && cp -r dist ../../part3/3.1backend",
+    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "morgan": "^1.10.0"
+  }
+}
