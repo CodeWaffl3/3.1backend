@@ -19,10 +19,12 @@
     "dev": "node --watch index.js",
     "start": "node index.js",
     "build:ui": "rm -rf dist && cd ../../part2/2.6phonebook && npm run build && cp -r dist ../../part3/3.1backend",
-    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push"
+    "deploy:full": "npm run build:ui && git add . && git commit -m 'uibuild_ex3.21' && git push"
   },
   "dependencies": {
+    "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "mongoose": "^8.10.1",
     "morgan": "^1.10.0"
   }
 }

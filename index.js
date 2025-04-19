@@ -1,9 +1,13 @@
+require('dotenv').config();
 const express = require('express')
 const morgan = require('morgan');
+const Person = require('./models/Person');
+
+
+
 const app = express()
 
 app.use(express.json());
-
 app.use(express.static('dist'))
 
 /*
@@ -49,52 +53,42 @@ const getRandomZeroToMax = (max) => {
 }
 
 app.get('/api/persons/', (request, response) => {
-    response.json(user_data);
+    Person.find({}).then((persons) => {
+        response.json(persons)
+    })
 })
 
-
-app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id);
-    const user = user_data.find(person => person.id === id);
-
-    if (user) {
-        response.json(user)
-    } else {
-        response.status(404).end()
-    }
+app.get('/api/persons/:id', (request, response,next) => {
+    Person.findById(request.params.id)
+        .then((person) => {
+            person ? response.json(person) : response.status(404).end();
+        })
+        .catch((error) => {
+            next(error);
+        });
 })
 
-app.get('/info/', (request, response) => {
+app.get('/info/', (request, response, next) => {
+    Person.find({})
+        .then((persons) => {
+            console.log(persons);
+            //Date Info
+            const options = { timeZone: 'America/Mexico_City', timeZoneName: 'short' };
+            const now = new Date().toLocaleString('en-US', options);
 
-    let number_of_users = user_data.filter(person => person.id ? true : false).map(person => person.id).length;
-    //Date Info
-    const options = { timeZone: 'America/Mexico_City', timeZoneName: 'short' };
-    const now = new Date().toLocaleString('en-US', options);
+            // Convert to full date string format
+            const dateString = new Date(now).toString();
 
-    // Convert to full date string format
-    const dateString = new Date(now).toString();
-
-    response.send(`<p>Phone Book contains ${number_of_users} users.</p>
-        <p>${dateString}</p>
-    `);
-})
-
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id);
-    user_data = user_data.filter(person => person.id !== id);
-    //Code 204 no content valid for when eliminating or if there was no user
-    response.status(204).end()
-})
-
-const createRandomID = () => {
-    return getRandomZeroToMax(MAX_ID)
-}
-
-morgan.token('bodyShow', (req, res) => JSON.stringify({"name" : req.body.name, "number" : req.body.number}));
-app.use(morgan(':bodyShow'));
+            const number_of_users = persons.map(person => person.id).length;
+            response.send(`<p>Phone Book contains ${number_of_users} users.</p>
+                <p>${dateString}</p>`
+            );
+        })
+        .catch((error) => next(error));
+});
 
 
-app.post('/api/persons/', (request, response) => {
+app.post('/api/persons/', (request, response, next) => {
     const body = request.body;
     if (!body)
     {
@@ -107,28 +101,71 @@ app.post('/api/persons/', (request, response) => {
             error: "name or number is missing"
         })
     }
-    if (user_data.some(person => person.name.toLowerCase() === body.name.toLowerCase())) {
-        return response.status(400).json({
-            error: 'name must be unique'
-        });
-    }
+    //TODO: Make it work with MongoDB
+    // if (user_data.some(person => person.name.toLowerCase() === body.name.toLowerCase())) {
+    //     return response.status(400).json({
+    //         error: 'name must be unique'
+    //     });
+    // }
 
-    let randomId = createRandomID()
-    while (user_data.some(person => person.id === randomId)) {
-        randomId = createRandomID();
-    }
-
-    const new_user = {
-        id: randomId,
+    const person = new Person({
         name: body.name,
-        number: body.number
-    };
-    user_data = user_data.concat(new_user);
+        number: body.number,
+    });
 
-    // console.log(user_data)
-
-    response.status(201).json(new_user);
+    person.save()
+        .then((savedPerson) => {
+        response.json(savedPerson);
+        })
+        .catch(error => next(error))
 })
+
+app.put('/api/persons/:id', (request, response,next) => {
+    const { name, number } = request.body;
+
+    const newPhone = {
+        name: name,
+        number: number,
+    }
+
+    Person.findByIdAndUpdate(request.params.id, newPhone, { new: true, runValidators: true, context: 'query'})
+        .then(updatedContact => {
+            response.json(updatedContact)
+        })
+        .catch(error => next(error));
+});
+
+app.delete('/api/persons/:id', (request, response) => {
+    Person.findByIdAndDelete(request.params.id)
+        .then((person) => {
+            //Code 204 no content valid for when eliminating or if there was no user
+            person ? response.json(person) : response.status(204).end();
+        })
+        .catch(error => next(error));
+})
+
+const createRandomID = () => {
+    return getRandomZeroToMax(MAX_ID)
+}
+
+morgan.token('bodyShow', (req, res) => JSON.stringify({"name" : req.body.name, "number" : req.body.number}));
+app.use(morgan(':bodyShow'));
+
+
+
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+    else if (error.name === 'ValidationError') {
+        return response.status(400).send({error: error.message})
+    }
+    next(error);
+}
+
+//TODO NOTA: este debe ser el último middleware cargado, ¡también todas las rutas deben ser registrada antes que esto!
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001
 
