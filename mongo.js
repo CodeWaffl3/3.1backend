@@ -23,7 +23,7 @@ const phoneBookSchema = new mongoose.Schema({
 const Person = mongoose.model('person', phoneBookSchema)
 
 if (name && number) {
-    const phone = new person({
+    const phone = new Person({
         name: name,
         number: number
     })

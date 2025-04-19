@@ -21,37 +21,6 @@ app.use(express.static('dist'))
         GET / 200 5.123 ms - 12
 */
 
-
-const MAX_ID = 10000
-
-let user_data = [
-    {
-        id: 1,
-        name: "Arto Hellas",
-        number: "040-123456"
-    },
-    {
-        id: 2,
-        name: "Ada Lovelace",
-        number: "39-44-5323523"
-    },
-    {
-        id: 3,
-        name: "Dan Abramov",
-        number: "12-43-234345"
-    },
-    {
-        id: 4,
-        name: "Mary Poppendieck",
-        number: "39-23-6423122"
-    }
-];
-
-
-const getRandomZeroToMax = (max) => {
-    return Math.random() * max
-}
-
 app.get('/api/persons/', (request, response) => {
     Person.find({}).then((persons) => {
         response.json(persons)
@@ -128,14 +97,14 @@ app.put('/api/persons/:id', (request, response,next) => {
         number: number,
     }
 
-    Person.findByIdAndUpdate(request.params.id, newPhone, { new: true, runValidators: true, context: 'query'})
+    Person.findByIdAndUpdate(request.params.id, newPhone, { new: true, runValidators: true, context: 'query' })
         .then(updatedContact => {
             response.json(updatedContact)
         })
         .catch(error => next(error));
 });
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response,next) => {
     Person.findByIdAndDelete(request.params.id)
         .then((person) => {
             //Code 204 no content valid for when eliminating or if there was no user
@@ -144,11 +113,7 @@ app.delete('/api/persons/:id', (request, response) => {
         .catch(error => next(error));
 })
 
-const createRandomID = () => {
-    return getRandomZeroToMax(MAX_ID)
-}
-
-morgan.token('bodyShow', (req, res) => JSON.stringify({"name" : req.body.name, "number" : req.body.number}));
+morgan.token('bodyShow', (req) => JSON.stringify({ "name" : req.body.name, "number" : req.body.number }));
 app.use(morgan(':bodyShow'));
 
 
@@ -159,7 +124,7 @@ const errorHandler = (error, request, response, next) => {
         return response.status(400).send({ error: 'malformatted id' })
     }
     else if (error.name === 'ValidationError') {
-        return response.status(400).send({error: error.message})
+        return response.status(400).send({ error: error.message })
     }
     next(error);
 }
